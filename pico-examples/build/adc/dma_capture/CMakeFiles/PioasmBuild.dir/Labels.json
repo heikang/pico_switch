@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/CMakeFiles/PioasmBuild"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/CMakeFiles/PioasmBuild.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/CMakeFiles/PioasmBuild-complete.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule"
+		},
+		{
+			"file" : "/home/kang/tmp/pico/pico-examples/build/adc/dma_capture/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"PioasmBuild"
+		],
+		"name" : "PioasmBuild"
+	}
+}
