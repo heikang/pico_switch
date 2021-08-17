@@ -20,24 +20,23 @@
 #include "lcd.h"
 #include "core1.h"
 
-uint8_t flag = 0; //0: no task , 1: task
-
-struct cpu1_task task;
+char core1buf[100];
+volatile uint8_t core1flag;
 
 void core1_entry(void)
 {
+#if 0
+	board_led_write(true);
+	sleep_ms(500);
+	board_led_write(false);
+	sleep_ms(500);
+#endif
+
+	ps("core1\n");
 	while(1){
-		board_led_write(true);
-		sleep_ms(500);
-		board_led_write(false);
-		sleep_ms(500);
-
-		if(flag){
-			if(task.func){
-				task.func();
-			}
-
-			flag = 0;
+		if(core1flag){
+			ps(core1buf);
+			core1flag = 0;
 		}
 	}
 }

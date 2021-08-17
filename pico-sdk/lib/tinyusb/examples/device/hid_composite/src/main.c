@@ -228,22 +228,23 @@ void kprint(char *buf)
 	board_uart_write(buf, strlen(buf));
 }
 
-char taskbuf[100];
-void tasks(void)
+void pc1(char *buf)
 {
-	ps(taskbuf);
+	while(core1flag != 0);
+	memset(core1buf, 0, sizeof(core1buf));
+	sprintf(core1buf, "%s", buf);
+	core1flag = 1;
 }
 
+extern const USB_Descriptor_Configuration_t desc_configuration;
 /*------------- MAIN -------------*/
 int main(void)
 {
+	uint8_t *desc;
 	int i;
 	//static uart_inst_t *uart_inst;
 	uint8_t buf[3] = {1,2,3};
 	board_init();
-	tusb_init();
-
-	multicore_launch_core1(core1_entry);
 
 	//init spi
 	spi_init(spi_default, 48*1000 * 1000); //54864
@@ -265,30 +266,23 @@ int main(void)
 
 	screen();
 
-	memset(taskbuf, 0, sizeof(taskbuf));
-	sprintf(taskbuf, "test1");
-	task.func = tasks;
-	flag = 1;
+	multicore_launch_core1(core1_entry);
 
-	while(1){
-		if(flag == 0){
-			memset(taskbuf, 0, sizeof(taskbuf));
-			sprintf(taskbuf, "test2");
-			flag = 1;
-		}else{
-			sleep_ms(100);
-		}
-	}
+	//pc1("123");
+	//pc1("456");
 
-	while(1)
-		ps("1");
-#if 0
+	sleep_ms(1000);
+	desc = (uint8_t const *)&desc_configuration;
+	for(i=0;i<5;i++)
+		pn(desc[i]);
+
+	tusb_init();
+
 	while (1)
 	{
 		tud_task(); // tinyusb device task
-		send_hid_report();
+		//send_hid_report();
 	}
-#endif
 
 	return 0;
 }

@@ -771,8 +771,8 @@ void ps(const uint8_t *p)
 {
 	char buf[5] = {0};
 	sprintf(buf, "%3d", sn);
-	LCD_ShowString(sx,sy, buf, RED, WHITE, 16, 0);
-	LCD_ShowString(sx+40,sy, p, RED, WHITE, 16, 0);
+	LCD_ShowString(sx,sy, buf, BLACK, LIGHTBLUE, 16, 0);
+	LCD_ShowString(sx+40,sy, p, BLACK, LIGHTBLUE, 16, 0);
 	sy += 20;
 
 	if((sy+20) > 240){
@@ -789,8 +789,8 @@ void pn(uint32_t num)
 {
 	char buf[5] = {0};
 	sprintf(buf, "%3d", sn);
-	LCD_ShowString(sx,sy, buf, RED, WHITE, 16, 0);
-	LCD_ShowIntNum(sx+40,sy,num, 15,RED,WHITE,16);
+	LCD_ShowString(sx,sy, buf, BLACK, LIGHTBLUE, 16, 0);
+	LCD_ShowIntNum(sx+40,sy,num, 15, BLACK, LIGHTBLUE,16);
 	sy += 20;
 
 	if((sy+20) > 240){
