@@ -41,6 +41,7 @@ if (NOT TARGET _rp2040_family_inclusion_marker)
 			hardware_structs
 			hardware_irq
 			hardware_spi
+			pico_multicore
 			hardware_resets
 			pico_sync
 			)

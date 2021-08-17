@@ -31,7 +31,6 @@
 #include "hardware/uart.h"
 #include "tusb.h"
 
-#if 1
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
@@ -43,9 +42,10 @@
 #include "bsp/board.h"
 #include "bsp/rp2040/board.h"
 
-#endif
-
 #include "usb_descriptors.h"
+
+#include "lcd.h"
+#include "core1.h"
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
@@ -223,51 +223,72 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	(void) bufsize;
 }
 
-void kd(int ms)
-{
-	static uint32_t start_ms = 0;
-	start_ms = board_millis();
-	while ( board_millis() - start_ms < ms);
-}
 void kprint(char *buf)
 {
 	board_uart_write(buf, strlen(buf));
 }
 
+char taskbuf[100];
+void tasks(void)
+{
+	ps(taskbuf);
+}
+
 /*------------- MAIN -------------*/
 int main(void)
 {
+	int i;
 	//static uart_inst_t *uart_inst;
 	uint8_t buf[3] = {1,2,3};
 	board_init();
 	tusb_init();
 
+	multicore_launch_core1(core1_entry);
+
 	//init spi
-	spi_init(spi_default, 1000 * 1000);
+	spi_init(spi_default, 48*1000 * 1000); //54864
+
+	//init pins
 	gpio_set_function(PICO_DEFAULT_SPI_RX_PIN, GPIO_FUNC_SPI); //GP16
 	gpio_set_function(PICO_DEFAULT_SPI_CSN_PIN, GPIO_FUNC_SPI); //GP17
 	gpio_set_function(PICO_DEFAULT_SPI_SCK_PIN, GPIO_FUNC_SPI); //GP18
 	gpio_set_function(PICO_DEFAULT_SPI_TX_PIN, GPIO_FUNC_SPI); //GP19
 
+	gpio_init(10);
+	gpio_set_dir(10, GPIO_OUT); //RES
+	gpio_init(11);
+	gpio_set_dir(11, GPIO_OUT); //DC
+	gpio_init(12);
+	gpio_set_dir(12, GPIO_OUT); //BLK
+
+	sleep_ms(100);
+
+	screen();
+
+	memset(taskbuf, 0, sizeof(taskbuf));
+	sprintf(taskbuf, "test1");
+	task.func = tasks;
+	flag = 1;
+
 	while(1){
-		kprint("1\r\n");
-		board_led_write(true);
-		sleep_ms(500);
-		board_led_write(false);
-		sleep_ms(500);
-
-		spi_write_blocking(spi_default, buf, 3);
-
-		//spi_read_blocking(spi_default, 0, buf, 3);
-		//sleep_ms(500);
+		if(flag == 0){
+			memset(taskbuf, 0, sizeof(taskbuf));
+			sprintf(taskbuf, "test2");
+			flag = 1;
+		}else{
+			sleep_ms(100);
+		}
 	}
 
+	while(1)
+		ps("1");
+#if 0
 	while (1)
 	{
 		tud_task(); // tinyusb device task
-
 		send_hid_report();
 	}
+#endif
 
 	return 0;
 }
