@@ -193,6 +193,7 @@ void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint8_t len)
 	(void) itf;
 	(void) len;
 
+	ps("hid comp");
 	send_hid_report();
 }
 
@@ -240,6 +241,7 @@ extern const USB_Descriptor_Configuration_t desc_configuration;
 /*------------- MAIN -------------*/
 int main(void)
 {
+	bool ledflag = false;
 	uint8_t *desc;
 	int i;
 	//static uart_inst_t *uart_inst;
@@ -273,15 +275,17 @@ int main(void)
 
 	sleep_ms(1000);
 	desc = (uint8_t const *)&desc_configuration;
-	for(i=0;i<5;i++)
-		pn(desc[i]);
 
 	tusb_init();
 
 	while (1)
 	{
 		tud_task(); // tinyusb device task
-		//send_hid_report();
+		send_hid_report();
+		sleep_ms(500);
+
+		board_led_write(ledflag);
+		ledflag = !ledflag;
 	}
 
 	return 0;

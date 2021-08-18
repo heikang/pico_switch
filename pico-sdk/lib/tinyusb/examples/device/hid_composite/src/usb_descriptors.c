@@ -171,7 +171,7 @@ uint8_t const * tud_hid_descriptor_report_cb(uint8_t itf)
 //--------------------------------------------------------------------+
 
 const USB_Descriptor_Configuration_t desc_configuration = {
-	.Config =
+	.Config = //9
 	{
 		.Header                 = {.Size = sizeof(USB_Descriptor_Configuration_Header_t), .Type = TUSB_DESC_CONFIGURATION},
 
@@ -183,10 +183,10 @@ const USB_Descriptor_Configuration_t desc_configuration = {
 
 		.ConfigAttributes       = 0x80,
 
-		.MaxPowerConsumption    = TUSB_DESC_CONFIG_POWER_MA(500)
+		.MaxPowerConsumption    = TUSB_DESC_CONFIG_POWER_MA(500),
 	},
 
-	.HID_Interface =
+	.HID_Interface = //9
 	{
 		.Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = TUSB_DESC_INTERFACE},
 
@@ -202,7 +202,7 @@ const USB_Descriptor_Configuration_t desc_configuration = {
 		.InterfaceStrIndex      = 0
 	},
 
-	.HID_JoystickHID =
+	.HID_JoystickHID = //9
 	{
 		.Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = 0x21},
 
@@ -213,7 +213,7 @@ const USB_Descriptor_Configuration_t desc_configuration = {
 		.HIDReportLength        = sizeof(JoystickReport)
 	},
 
-	.HID_ReportINEndpoint =
+	.HID_ReportINEndpoint = //7
 	{
 		.Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = TUSB_DESC_ENDPOINT},
 
@@ -223,7 +223,7 @@ const USB_Descriptor_Configuration_t desc_configuration = {
 		.PollingIntervalMS      = 0x05
 	},
 
-	.HID_ReportOUTEndpoint =
+	.HID_ReportOUTEndpoint = //7
 	{
 		.Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = TUSB_DESC_ENDPOINT},
 
@@ -240,6 +240,7 @@ const USB_Descriptor_Configuration_t desc_configuration = {
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index)
 {
 	(void) index; // for multiple configurations
+
 	return (uint8_t const *)&desc_configuration;
 }
 

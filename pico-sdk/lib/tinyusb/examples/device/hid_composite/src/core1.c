@@ -32,7 +32,7 @@ void core1_entry(void)
 	sleep_ms(500);
 #endif
 
-	ps("core1\n");
+	//ps("core1\n");
 	while(1){
 		if(core1flag){
 			ps(core1buf);

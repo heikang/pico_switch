@@ -20,8 +20,11 @@
 #endif
 
 
-#include "lcdfont.h"
 #include "lcd.h"
+#include "img/lcdfont.h"
+#include "img/github.h"
+#include "img/ns.h"
+#include "img/nga.h"
 
 /******************************************************************************
   函数说明：LCD串行数据写入函数
@@ -220,10 +223,18 @@ void LCD_Init(void)
   color       要填充的颜色
   返回值：  无
  ******************************************************************************/
+uint16_t picbuf[115200/2];
 void LCD_Fill(uint16_t xsta,uint16_t ysta,uint16_t xend,uint16_t yend,uint16_t color)
 {          
 	uint16_t i,j; 
+
+	for(i=0;i<(115200/2);i++)
+		picbuf[i] = color;
+
 	LCD_Address_Set(xsta,ysta,xend-1,yend-1);//设置显示范围
+
+	spi_write_blocking(spi_default, (uint8_t *)picbuf, (xend-xsta)*(yend-ysta)*2);
+#if 0
 	for(i=ysta;i<yend;i++)
 	{													   	 	
 		for(j=xsta;j<xend;j++)
@@ -231,6 +242,7 @@ void LCD_Fill(uint16_t xsta,uint16_t ysta,uint16_t xend,uint16_t yend,uint16_t c
 			LCD_WR_DATA(color);
 		}
 	} 					  	    
+#endif
 }
 
 /******************************************************************************
@@ -331,260 +343,6 @@ void Draw_Circle(uint16_t x0,uint16_t y0,uint8_t r,uint16_t color)
 		{
 			b--;
 		}
-	}
-}
-
-/******************************************************************************
-  函数说明：显示汉字串
-  入口数据：x,y显示坐标
- *s 要显示的汉字串
- fc 字的颜色
- bc 字的背景色
- sizey 字号 可选 16 24 32
-mode:  0非叠加模式  1叠加模式
-返回值：  无
- ******************************************************************************/
-void LCD_ShowChinese(uint16_t x,uint16_t y,uint8_t *s,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	while(*s!=0)
-	{
-		if(sizey==12) LCD_ShowChinese12x12(x,y,s,fc,bc,sizey,mode);
-		else if(sizey==16) LCD_ShowChinese16x16(x,y,s,fc,bc,sizey,mode);
-		else if(sizey==24) LCD_ShowChinese24x24(x,y,s,fc,bc,sizey,mode);
-		else if(sizey==32) LCD_ShowChinese32x32(x,y,s,fc,bc,sizey,mode);
-		else return;
-		s+=2;
-		x+=sizey;
-	}
-}
-
-/******************************************************************************
-  函数说明：显示单个12x12汉字
-  入口数据：x,y显示坐标
- *s 要显示的汉字
- fc 字的颜色
- bc 字的背景色
- sizey 字号
-mode:  0非叠加模式  1叠加模式
-返回值：  无
- ******************************************************************************/
-void LCD_ShowChinese12x12(uint16_t x,uint16_t y,uint8_t *s,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	uint8_t i,j,m=0;
-	uint16_t k;
-	uint16_t HZnum;//汉字数目
-	uint16_t TypefaceNum;//一个字符所占字节大小
-	uint16_t x0=x;
-	TypefaceNum=(sizey/8+((sizey%8)?1:0))*sizey;
-
-	HZnum=sizeof(tfont12)/sizeof(typFNT_GB12);	//统计汉字数目
-	for(k=0;k<HZnum;k++) 
-	{
-		if((tfont12[k].Index[0]==*(s))&&(tfont12[k].Index[1]==*(s+1)))
-		{ 	
-			LCD_Address_Set(x,y,x+sizey-1,y+sizey-1);
-			for(i=0;i<TypefaceNum;i++)
-			{
-				for(j=0;j<8;j++)
-				{	
-					if(!mode)//非叠加方式
-					{
-						if(tfont12[k].Msk[i]&(0x01<<j))LCD_WR_DATA(fc);
-						else LCD_WR_DATA(bc);
-						m++;
-						if(m%sizey==0)
-						{
-							m=0;
-							break;
-						}
-					}
-					else//叠加方式
-					{
-						if(tfont12[k].Msk[i]&(0x01<<j))	LCD_DrawPoint(x,y,fc);//画一个点
-						x++;
-						if((x-x0)==sizey)
-						{
-							x=x0;
-							y++;
-							break;
-						}
-					}
-				}
-			}
-		}				  	
-		continue;  //查找到对应点阵字库立即退出，防止多个汉字重复取模带来影响
-	}
-} 
-
-/******************************************************************************
-  函数说明：显示单个16x16汉字
-  入口数据：x,y显示坐标
- *s 要显示的汉字
- fc 字的颜色
- bc 字的背景色
- sizey 字号
-mode:  0非叠加模式  1叠加模式
-返回值：  无
- ******************************************************************************/
-void LCD_ShowChinese16x16(uint16_t x,uint16_t y,uint8_t *s,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	uint8_t i,j,m=0;
-	uint16_t k;
-	uint16_t HZnum;//汉字数目
-	uint16_t TypefaceNum;//一个字符所占字节大小
-	uint16_t x0=x;
-	TypefaceNum=(sizey/8+((sizey%8)?1:0))*sizey;
-	HZnum=sizeof(tfont16)/sizeof(typFNT_GB16);	//统计汉字数目
-	for(k=0;k<HZnum;k++) 
-	{
-		if ((tfont16[k].Index[0]==*(s))&&(tfont16[k].Index[1]==*(s+1)))
-		{ 	
-			LCD_Address_Set(x,y,x+sizey-1,y+sizey-1);
-			for(i=0;i<TypefaceNum;i++)
-			{
-				for(j=0;j<8;j++)
-				{	
-					if(!mode)//非叠加方式
-					{
-						if(tfont16[k].Msk[i]&(0x01<<j))LCD_WR_DATA(fc);
-						else LCD_WR_DATA(bc);
-						m++;
-						if(m%sizey==0)
-						{
-							m=0;
-							break;
-						}
-					}
-					else//叠加方式
-					{
-						if(tfont16[k].Msk[i]&(0x01<<j))	LCD_DrawPoint(x,y,fc);//画一个点
-						x++;
-						if((x-x0)==sizey)
-						{
-							x=x0;
-							y++;
-							break;
-						}
-					}
-				}
-			}
-		}				  	
-		continue;  //查找到对应点阵字库立即退出，防止多个汉字重复取模带来影响
-	}
-} 
-
-
-/******************************************************************************
-  函数说明：显示单个24x24汉字
-  入口数据：x,y显示坐标
- *s 要显示的汉字
- fc 字的颜色
- bc 字的背景色
- sizey 字号
-mode:  0非叠加模式  1叠加模式
-返回值：  无
- ******************************************************************************/
-void LCD_ShowChinese24x24(uint16_t x,uint16_t y,uint8_t *s,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	uint8_t i,j,m=0;
-	uint16_t k;
-	uint16_t HZnum;//汉字数目
-	uint16_t TypefaceNum;//一个字符所占字节大小
-	uint16_t x0=x;
-	TypefaceNum=(sizey/8+((sizey%8)?1:0))*sizey;
-	HZnum=sizeof(tfont24)/sizeof(typFNT_GB24);	//统计汉字数目
-	for(k=0;k<HZnum;k++) 
-	{
-		if ((tfont24[k].Index[0]==*(s))&&(tfont24[k].Index[1]==*(s+1)))
-		{ 	
-			LCD_Address_Set(x,y,x+sizey-1,y+sizey-1);
-			for(i=0;i<TypefaceNum;i++)
-			{
-				for(j=0;j<8;j++)
-				{	
-					if(!mode)//非叠加方式
-					{
-						if(tfont24[k].Msk[i]&(0x01<<j))LCD_WR_DATA(fc);
-						else LCD_WR_DATA(bc);
-						m++;
-						if(m%sizey==0)
-						{
-							m=0;
-							break;
-						}
-					}
-					else//叠加方式
-					{
-						if(tfont24[k].Msk[i]&(0x01<<j))	LCD_DrawPoint(x,y,fc);//画一个点
-						x++;
-						if((x-x0)==sizey)
-						{
-							x=x0;
-							y++;
-							break;
-						}
-					}
-				}
-			}
-		}				  	
-		continue;  //查找到对应点阵字库立即退出，防止多个汉字重复取模带来影响
-	}
-} 
-
-/******************************************************************************
-  函数说明：显示单个32x32汉字
-  入口数据：x,y显示坐标
- *s 要显示的汉字
- fc 字的颜色
- bc 字的背景色
- sizey 字号
-mode:  0非叠加模式  1叠加模式
-返回值：  无
- ******************************************************************************/
-void LCD_ShowChinese32x32(uint16_t x,uint16_t y,uint8_t *s,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	uint8_t i,j,m=0;
-	uint16_t k;
-	uint16_t HZnum;//汉字数目
-	uint16_t TypefaceNum;//一个字符所占字节大小
-	uint16_t x0=x;
-	TypefaceNum=(sizey/8+((sizey%8)?1:0))*sizey;
-	HZnum=sizeof(tfont32)/sizeof(typFNT_GB32);	//统计汉字数目
-	for(k=0;k<HZnum;k++) 
-	{
-		if ((tfont32[k].Index[0]==*(s))&&(tfont32[k].Index[1]==*(s+1)))
-		{ 	
-			LCD_Address_Set(x,y,x+sizey-1,y+sizey-1);
-			for(i=0;i<TypefaceNum;i++)
-			{
-				for(j=0;j<8;j++)
-				{	
-					if(!mode)//非叠加方式
-					{
-						if(tfont32[k].Msk[i]&(0x01<<j))LCD_WR_DATA(fc);
-						else LCD_WR_DATA(bc);
-						m++;
-						if(m%sizey==0)
-						{
-							m=0;
-							break;
-						}
-					}
-					else//叠加方式
-					{
-						if(tfont32[k].Msk[i]&(0x01<<j))	LCD_DrawPoint(x,y,fc);//画一个点
-						x++;
-						if((x-x0)==sizey)
-						{
-							x=x0;
-							y++;
-							break;
-						}
-					}
-				}
-			}
-		}				  	
-		continue;  //查找到对应点阵字库立即退出，防止多个汉字重复取模带来影响
 	}
 }
 
@@ -752,6 +510,9 @@ void LCD_ShowPicture(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const 
 	uint16_t i,j;
 	uint32_t k=0;
 	LCD_Address_Set(x,y,x+length-1,y+width-1);
+
+	spi_write_blocking(spi_default, pic, length*width*2);
+#if 0
 	for(i=0;i<length;i++)
 	{
 		for(j=0;j<width;j++)
@@ -761,7 +522,18 @@ void LCD_ShowPicture(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const 
 			k++;
 		}
 	}
+#endif
 }
+
+void LCD_ShowPicture16(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const uint16_t pic[])
+{
+	uint16_t i,j;
+	uint32_t k=0;
+	LCD_Address_Set(x,y,x+length-1,y+width-1);
+
+	spi_write_blocking(spi_default, (uint8_t*)pic, length*width*2);
+}
+
 
 uint16_t sx = 0;
 uint16_t sy = 0;
@@ -815,7 +587,8 @@ void Calc_Fps(void)
 	start_ms = board_millis();
 
 	for(i=0;i<200;i++){
-		LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
+		//LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
+		LCD_ShowPicture(0,0,240,240,gImage_ns);
 	}
 
 	end_ms = board_millis();
@@ -832,6 +605,8 @@ void Calc_Fps(void)
 
 void screen(void)
 {
+	int i;
+	char kbuf[10] = {0};
 	LCD_Init();
 
 	LCD_Fill(0,0,LCD_W,LCD_H,WHITE);
@@ -844,22 +619,10 @@ void screen(void)
 	LCD_Fill(0,0,LCD_W,LCD_H,LIGHTBLUE);
 	//Calc_Fps();
 
-#if 0
-	while(1){
-		ps("hello world!");
-		sleep_ms(1000);
-	}
-
-	while(1){
-		int i,j;
-		LCD_Fill(0,0,LCD_W,LCD_H,WHITE);
-		for(j=0;j<3;j++){
-			for(i=0;i<6;i++){
-				LCD_ShowPicture(40*i,120+j*40,40,40,gImage_1);
-				LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
-			}
-		}
-	}
-#endif
-
+	LCD_ShowPicture16(0,0,240,240,gImage_github);
+	sleep_ms(1000);
+	LCD_ShowPicture16(0,0,240,240,gImage_nga);
+	sleep_ms(1000);
+	LCD_ShowPicture16(0,0,240,240,gImage_ns);
+	sleep_ms(1000);
 }

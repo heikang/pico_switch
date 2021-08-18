@@ -34,7 +34,7 @@ enum
   REPORT_ID_COUNT
 };
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	uint8_t Size; /**< Size of the descriptor, in bytes. */
 	uint8_t Type; /**< Type of the descriptor, either a value in \ref USB_DescriptorTypes_t or a value
@@ -42,7 +42,7 @@ typedef struct
 		       */
 }USB_Descriptor_Header_t;
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
 
@@ -64,7 +64,7 @@ typedef struct
 				       */
 }USB_Descriptor_Configuration_Header_t;
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
 
@@ -83,7 +83,7 @@ typedef struct
 	uint8_t InterfaceStrIndex; /**< Index of the string descriptor describing the interface. */
 }USB_Descriptor_Interface_t;
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	USB_Descriptor_Header_t Header; /**< Regular descriptor header containing the descriptor's type and length. */
 
@@ -99,7 +99,7 @@ typedef struct
 	uint16_t                HIDReportLength; /**< Length of the associated HID report descriptor, in bytes. */
 }USB_HID_Descriptor_HID_t;
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
 
@@ -117,7 +117,7 @@ typedef struct
 				     */
 }USB_Descriptor_Endpoint_t;
 
-typedef struct
+typedef struct TU_ATTR_PACKED
 {
 	USB_Descriptor_Configuration_Header_t Config;
 
