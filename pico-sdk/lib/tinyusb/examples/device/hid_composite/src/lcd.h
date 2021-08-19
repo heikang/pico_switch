@@ -9,16 +9,14 @@
 #define LCD_H 240
 
 //-----------------LCD端口定义---------------- 
-#define LCD_RES_Clr()  gpio_put(10, 0)//RES
-#define LCD_RES_Set()  gpio_put(10, 1)
+#define LCD_RES_Clr()  gpio_put(20, 0)//RES
+#define LCD_RES_Set()  gpio_put(20, 1)
 
-#define LCD_DC_Clr()   gpio_put(11, 0)//DC
-#define LCD_DC_Set()   gpio_put(11, 1)
+#define LCD_DC_Clr()   gpio_put(21, 0)//DC
+#define LCD_DC_Set()   gpio_put(21, 1)
 
-#define LCD_BLK_Clr()  gpio_put(12, 0)//BLK
-#define LCD_BLK_Set()  gpio_put(12, 1)
-
-
+#define LCD_BLK_Clr()  gpio_put(22, 0)//BLK
+#define LCD_BLK_Set()  gpio_put(22, 1)
 
 
 void LCD_GPIO_Init(void);//初始化GPIO

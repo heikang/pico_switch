@@ -32,6 +32,7 @@
 #include "tusb.h"
 
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
@@ -45,7 +46,6 @@
 #include "usb_descriptors.h"
 
 #include "lcd.h"
-#include "core1.h"
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
@@ -63,6 +63,17 @@ enum  {
 
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
+void kprint(const char *buf)
+{
+	board_uart_write(buf, strlen(buf));
+	board_uart_write("\r\n", strlen("\r\n"));
+}
+void kprintn(uint32_t num)
+{
+	char buf[20] = {0};
+	sprintf(buf, "%d", num);
+	kprint(buf);
+}
 //--------------------------------------------------------------------+
 // Device callbacks
 //--------------------------------------------------------------------+
@@ -71,12 +82,14 @@ static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 void tud_mount_cb(void)
 {
 	blink_interval_ms = BLINK_MOUNTED;
+	kprint(__func__);
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
 	blink_interval_ms = BLINK_NOT_MOUNTED;
+	kprint(__func__);
 }
 
 // Invoked when usb bus is suspended
@@ -86,12 +99,14 @@ void tud_suspend_cb(bool remote_wakeup_en)
 {
 	(void) remote_wakeup_en;
 	blink_interval_ms = BLINK_SUSPENDED;
+	kprint(__func__);
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
 	blink_interval_ms = BLINK_MOUNTED;
+	kprint(__func__);
 }
 #endif
 
@@ -174,14 +189,45 @@ typedef struct {
 	uint8_t  RY;     // Right Stick Y
 } USB_JoystickReport_Output_t;
 
+bool jflag = false;
+uint32_t tret = 0;
 static void send_hid_report(void)
 {
 	USB_JoystickReport_Input_t report = {0};
 
-	// use to avoid send multiple consecutive zero report for keyboard
-	if ( !tud_hid_ready() ) return;
+	if(board_millis() < 10000){
+		return;
+	}
 
-	report.Button |= SWITCH_A;
+	// use to avoid send multiple consecutive zero report for keyboard
+	if ( !tud_hid_ready() ) {
+		tret++;
+		if(tret > 100000){
+			kprint("tret");
+			if ( tud_suspended() )
+			{
+				tud_remote_wakeup();
+				kprint("wakeup");
+				return;
+			}
+
+			tret = 0;
+		}
+	}
+
+	report.LX = 128;
+	report.LY = 128;
+	report.RX = 128;
+	report.RY = 128;
+
+	if(jflag){
+		report.Button |= SWITCH_A;
+		kprint("A+");
+	}else{
+		kprint("none");
+	}
+	jflag = !jflag;
+
 	tud_hid_report(0, &report, sizeof(report));
 }
 
@@ -193,7 +239,7 @@ void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint8_t len)
 	(void) itf;
 	(void) len;
 
-	ps("hid comp");
+	kprint(__func__);
 	send_hid_report();
 }
 
@@ -209,6 +255,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
 	(void) buffer;
 	(void) reqlen;
 
+	kprint(__func__);
 	return 0;
 }
 
@@ -222,31 +269,14 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	(void) report_type;
 	(void) buffer;
 	(void) bufsize;
+	kprint(__func__);
 }
 
-void kprint(char *buf)
-{
-	board_uart_write(buf, strlen(buf));
-}
 
-void pc1(char *buf)
-{
-	while(core1flag != 0);
-	memset(core1buf, 0, sizeof(core1buf));
-	sprintf(core1buf, "%s", buf);
-	core1flag = 1;
-}
-
-extern const USB_Descriptor_Configuration_t desc_configuration;
 /*------------- MAIN -------------*/
-int main(void)
+void main1(void) //control lcd
 {
-	bool ledflag = false;
-	uint8_t *desc;
-	int i;
-	//static uart_inst_t *uart_inst;
-	uint8_t buf[3] = {1,2,3};
-	board_init();
+	kprint("--------core1 start--------");
 
 	//init spi
 	spi_init(spi_default, 48*1000 * 1000); //54864
@@ -257,35 +287,60 @@ int main(void)
 	gpio_set_function(PICO_DEFAULT_SPI_SCK_PIN, GPIO_FUNC_SPI); //GP18
 	gpio_set_function(PICO_DEFAULT_SPI_TX_PIN, GPIO_FUNC_SPI); //GP19
 
-	gpio_init(10);
-	gpio_set_dir(10, GPIO_OUT); //RES
-	gpio_init(11);
-	gpio_set_dir(11, GPIO_OUT); //DC
-	gpio_init(12);
-	gpio_set_dir(12, GPIO_OUT); //BLK
+	gpio_init(20);
+	gpio_set_dir(20, GPIO_OUT); //RES
+	gpio_init(21);
+	gpio_set_dir(21, GPIO_OUT); //DC
+	gpio_init(22);
+	gpio_set_dir(22, GPIO_OUT); //BLK
 
 	sleep_ms(100);
 
 	screen();
+}
 
-	multicore_launch_core1(core1_entry);
+bool timer_callback250(repeating_timer_t *t) {
+	static bool ledflag = false;
+	board_led_write(ledflag);
+	ledflag = !ledflag;
 
-	//pc1("123");
-	//pc1("456");
+	send_hid_report();
+	return true;
+}
 
-	sleep_ms(1000);
-	desc = (uint8_t const *)&desc_configuration;
+bool timer_callback5000(repeating_timer_t *t) {
+	kprintn(board_millis());
+	return true;
+}
+int main(void)
+{
+	int i;
+	char buf;
+	repeating_timer_t timer250;
+	repeating_timer_t timer5000;
 
+	board_init();
+
+	multicore_launch_core1(main1);
+
+	sleep_ms(100);
+	kprint("--------core0 start--------");
+
+	add_repeating_timer_ms(250, timer_callback250, NULL, &timer250);
+	add_repeating_timer_ms(5000, timer_callback5000, NULL, &timer5000);
+#if 0
+	while(1){
+		//get script
+		board_uart_read(&buf, 1);
+		//save script
+		board_uart_write(&buf, 1);
+	}
+#endif
 	tusb_init();
 
 	while (1)
 	{
 		tud_task(); // tinyusb device task
-		send_hid_report();
-		sleep_ms(500);
-
-		board_led_write(ledflag);
-		ledflag = !ledflag;
 	}
 
 	return 0;

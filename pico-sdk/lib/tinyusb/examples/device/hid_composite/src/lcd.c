@@ -606,23 +606,16 @@ void Calc_Fps(void)
 void screen(void)
 {
 	int i;
-	char kbuf[10] = {0};
+
 	LCD_Init();
-
-	LCD_Fill(0,0,LCD_W,LCD_H,WHITE);
-	LCD_Fill(0,0,LCD_W,LCD_H,BLACK);
-	LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
-	LCD_Fill(0,0,LCD_W,LCD_H,RED);
-	LCD_Fill(0,0,LCD_W,LCD_H,GREEN);
-	LCD_Fill(0,0,LCD_W,LCD_H,YELLOW);
-
-	LCD_Fill(0,0,LCD_W,LCD_H,LIGHTBLUE);
 	//Calc_Fps();
 
-	LCD_ShowPicture16(0,0,240,240,gImage_github);
-	sleep_ms(1000);
-	LCD_ShowPicture16(0,0,240,240,gImage_nga);
-	sleep_ms(1000);
-	LCD_ShowPicture16(0,0,240,240,gImage_ns);
-	sleep_ms(1000);
+	while(1){
+		LCD_ShowPicture16(0,0,240,240,gImage_github);
+		sleep_ms(2000);
+		LCD_ShowPicture16(0,0,240,240,gImage_nga);
+		sleep_ms(2000);
+		LCD_ShowPicture16(0,0,240,240,gImage_ns);
+		sleep_ms(2000);
+	}
 }
