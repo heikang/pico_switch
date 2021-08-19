@@ -45,6 +45,7 @@
 
 #include "usb_descriptors.h"
 
+#include "lvgl/lvgl.h"
 #include "lcd.h"
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
@@ -272,10 +273,30 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	kprint(__func__);
 }
 
+bool timer_callback1(repeating_timer_t *t) {
+	static bool ledflag = false;
+	board_led_write(ledflag);
+	ledflag = !ledflag;
+
+	send_hid_report();
+	return true;
+}
+bool timer_callback(repeating_timer_t *t) {
+	lv_tick_inc(1);
+	return true;
+}
+void lvgl_demo_start(void)
+{
+	lv_obj_t *label = lv_label_create(lv_scr_act());
+	lv_label_set_text(label, "hello world");
+	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+}
 
 /*------------- MAIN -------------*/
+repeating_timer_t timer;
 void main1(void) //control lcd
 {
+	add_repeating_timer_ms(1, timer_callback, NULL, &timer);
 	kprint("--------core1 start--------");
 
 	//init spi
@@ -296,28 +317,20 @@ void main1(void) //control lcd
 
 	sleep_ms(100);
 
-	screen();
+	lv_init();
+	lv_port_disp_init();
+	lvgl_demo_start();
+
+	while(1){
+		lv_task_handler();
+	}
+
 }
 
-bool timer_callback250(repeating_timer_t *t) {
-	static bool ledflag = false;
-	board_led_write(ledflag);
-	ledflag = !ledflag;
-
-	send_hid_report();
-	return true;
-}
-
-bool timer_callback5000(repeating_timer_t *t) {
-	kprintn(board_millis());
-	return true;
-}
 int main(void)
 {
 	int i;
 	char buf;
-	repeating_timer_t timer250;
-	repeating_timer_t timer5000;
 
 	board_init();
 
@@ -326,8 +339,6 @@ int main(void)
 	sleep_ms(100);
 	kprint("--------core0 start--------");
 
-	add_repeating_timer_ms(250, timer_callback250, NULL, &timer250);
-	add_repeating_timer_ms(5000, timer_callback5000, NULL, &timer5000);
 #if 0
 	while(1){
 		//get script

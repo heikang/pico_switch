@@ -1,4 +1,15 @@
-#if 1
+/**
+ * @file lv_port_disp_templ.c
+ *
+ */
+
+ /*Copy this file as "lv_port_disp.c" and set this value to "1" to enable content*/
+
+/*********************
+ *      INCLUDES
+ *********************/
+#include "lcd.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,120 +28,123 @@
 
 #include "bsp/board.h"
 #include "bsp/rp2040/board.h"
-#endif
 
-
-#include "lcd.h"
-#include "img/lcdfont.h"
-#include "img/github.h"
 #include "img/ns.h"
-#include "img/nga.h"
 
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºLCD´®ĞĞÊı¾İĞ´Èëº¯Êı
-  Èë¿ÚÊı¾İ£ºdat  ÒªĞ´ÈëµÄ´®ĞĞÊı¾İ
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_Writ_Bus(uint8_t dat) 
+
+/*********************
+ *      DEFINES
+ *********************/
+#define USE_HORIZONTAL 0  //è®¾ç½®æ¨ªå±æˆ–è€…ç«–å±æ˜¾ç¤º 0æˆ–1ä¸ºç«–å± 2æˆ–3ä¸ºæ¨ªå±
+
+#define LCD_W 240
+#define LCD_H 240
+
+//-----------------LCDç«¯å£å®šä¹‰---------------- 
+#define LCD_RES_Clr()  gpio_put(20, 0)//RES
+#define LCD_RES_Set()  gpio_put(20, 1)
+
+#define LCD_DC_Clr()   gpio_put(21, 0)//DC
+#define LCD_DC_Set()   gpio_put(21, 1)
+
+#define LCD_BLK_Clr()  gpio_put(22, 0)//BLK
+#define LCD_BLK_Set()  gpio_put(22, 1)
+
+//ç”»ç¬”é¢œè‰²
+#define WHITE         	 0xFFFF
+#define BLACK         	 0x0000	  
+#define BLUE           	 0x001F  
+#define BRED             0XF81F
+#define GRED 			       0XFFE0
+#define GBLUE			       0X07FF
+#define RED           	 0xF800
+#define MAGENTA       	 0xF81F
+#define GREEN         	 0x07E0
+#define CYAN          	 0x7FFF
+#define YELLOW        	 0xFFE0
+#define BROWN 			     0XBC40 //æ£•è‰²
+#define BRRED 			     0XFC07 //æ£•çº¢è‰²
+#define GRAY  			     0X8430 //ç°è‰²
+#define DARKBLUE      	 0X01CF	//æ·±è“è‰²
+#define LIGHTBLUE      	 0X7D7C	//æµ…è“è‰²  
+#define GRAYBLUE       	 0X5458 //ç°è“è‰²
+#define LIGHTGREEN     	 0X841F //æµ…ç»¿è‰²
+#define LGRAY 			     0XC618 //æµ…ç°è‰²(PANNEL),çª—ä½“èƒŒæ™¯è‰²
+#define LGRAYBLUE        0XA651 //æµ…ç°è“è‰²(ä¸­é—´å±‚é¢œè‰²)
+#define LBBLUE           0X2B12 //æµ…æ£•è“è‰²(é€‰æ‹©æ¡ç›®çš„åè‰²)
+
+
+/**********************
+ *      TYPEDEFS
+ **********************/
+
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
+static void LCD_Writ_Bus(uint8_t dat) 
 {
 	spi_write_blocking(spi_default, &dat, 1);
 }
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºLCDĞ´ÈëÊı¾İ
-  Èë¿ÚÊı¾İ£ºdat Ğ´ÈëµÄÊı¾İ
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_WR_DATA8(uint8_t dat)
+static void LCD_WR_DATA8(uint8_t dat)
 {
 	LCD_Writ_Bus(dat);
 }
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºLCDĞ´ÈëÊı¾İ
-  Èë¿ÚÊı¾İ£ºdat Ğ´ÈëµÄÊı¾İ
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_WR_DATA(uint16_t dat)
+static void LCD_WR_DATA(uint16_t dat)
 {
 	LCD_Writ_Bus(dat>>8);
 	LCD_Writ_Bus(dat);
 }
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºLCDĞ´ÈëÃüÁî
-  Èë¿ÚÊı¾İ£ºdat Ğ´ÈëµÄÃüÁî
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_WR_REG(uint8_t dat)
+static void LCD_WR_REG(uint8_t dat)
 {
-	LCD_DC_Clr();//   gpio_put(11, 0)//DC //Ğ´ÃüÁî
+	LCD_DC_Clr();//   gpio_put(11, 0)//DC //å†™å‘½ä»¤
 	LCD_Writ_Bus(dat);
-	LCD_DC_Set();//Ğ´Êı¾İ
+	LCD_DC_Set();//å†™æ•°æ®
 }
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÉèÖÃÆğÊ¼ºÍ½áÊøµØÖ·
-  Èë¿ÚÊı¾İ£ºx1,x2 ÉèÖÃÁĞµÄÆğÊ¼ºÍ½áÊøµØÖ·
-  y1,y2 ÉèÖÃĞĞµÄÆğÊ¼ºÍ½áÊøµØÖ·
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_Address_Set(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2)
+static void LCD_Address_Set(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2)
 {
-	if(USE_HORIZONTAL==0)
-	{
-		LCD_WR_REG(0x2a);//ÁĞµØÖ·ÉèÖÃ
+	if(USE_HORIZONTAL==0){
+		LCD_WR_REG(0x2a);//åˆ—åœ°å€è®¾ç½®
 		LCD_WR_DATA(x1);
 		LCD_WR_DATA(x2);
-		LCD_WR_REG(0x2b);//ĞĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2b);//è¡Œåœ°å€è®¾ç½®
 		LCD_WR_DATA(y1);
 		LCD_WR_DATA(y2);
-		LCD_WR_REG(0x2c);//´¢´æÆ÷Ğ´
-	}
-	else if(USE_HORIZONTAL==1)
-	{
-		LCD_WR_REG(0x2a);//ÁĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2c);//å‚¨å­˜å™¨å†™
+	}else if(USE_HORIZONTAL==1){
+		LCD_WR_REG(0x2a);//åˆ—åœ°å€è®¾ç½®
 		LCD_WR_DATA(x1);
 		LCD_WR_DATA(x2);
-		LCD_WR_REG(0x2b);//ĞĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2b);//è¡Œåœ°å€è®¾ç½®
 		LCD_WR_DATA(y1+80);
 		LCD_WR_DATA(y2+80);
-		LCD_WR_REG(0x2c);//´¢´æÆ÷Ğ´
-	}
-	else if(USE_HORIZONTAL==2)
-	{
-		LCD_WR_REG(0x2a);//ÁĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2c);//å‚¨å­˜å™¨å†™
+	}else if(USE_HORIZONTAL==2){
+		LCD_WR_REG(0x2a);//åˆ—åœ°å€è®¾ç½®
 		LCD_WR_DATA(x1);
 		LCD_WR_DATA(x2);
-		LCD_WR_REG(0x2b);//ĞĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2b);//è¡Œåœ°å€è®¾ç½®
 		LCD_WR_DATA(y1);
 		LCD_WR_DATA(y2);
-		LCD_WR_REG(0x2c);//´¢´æÆ÷Ğ´
-	}
-	else
-	{
-		LCD_WR_REG(0x2a);//ÁĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2c);//å‚¨å­˜å™¨å†™
+	}else{
+		LCD_WR_REG(0x2a);//åˆ—åœ°å€è®¾ç½®
 		LCD_WR_DATA(x1+80);
 		LCD_WR_DATA(x2+80);
-		LCD_WR_REG(0x2b);//ĞĞµØÖ·ÉèÖÃ
+		LCD_WR_REG(0x2b);//è¡Œåœ°å€è®¾ç½®
 		LCD_WR_DATA(y1);
 		LCD_WR_DATA(y2);
-		LCD_WR_REG(0x2c);//´¢´æÆ÷Ğ´
+		LCD_WR_REG(0x2c);//å‚¨å­˜å™¨å†™
 	}
 }
 
 void LCD_Init(void)
 {
-
-	LCD_RES_Clr();//  gpio_put(10, 0)//RES //¸´Î»
+	LCD_RES_Clr();//  gpio_put(10, 0)//RES //å¤ä½
 	sleep_ms(100);
 	LCD_RES_Set();
 	sleep_ms(100);
 
-	LCD_BLK_Set();//´ò¿ª±³¹â
+	LCD_BLK_Set();//æ‰“å¼€èƒŒå…‰
 	sleep_ms(100);
 
 	//************* Start Initial Sequence **********//
@@ -212,410 +226,128 @@ void LCD_Init(void)
 	LCD_WR_REG(0x21); 
 
 	LCD_WR_REG(0x29); 
-} 
+}
+static void disp_init(void);
 
+static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
+//static void gpu_fill(lv_disp_drv_t * disp_drv, lv_color_t * dest_buf, lv_coord_t dest_width,
+//        const lv_area_t * fill_area, lv_color_t color);
 
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÔÚÖ¸¶¨ÇøÓòÌî³äÑÕÉ«
-  Èë¿ÚÊı¾İ£ºxsta,ysta   ÆğÊ¼×ø±ê
-  xend,yend   ÖÕÖ¹×ø±ê
-  color       ÒªÌî³äµÄÑÕÉ«
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-uint16_t picbuf[115200/2];
-void LCD_Fill(uint16_t xsta,uint16_t ysta,uint16_t xend,uint16_t yend,uint16_t color)
-{          
-	uint16_t i,j; 
+/**********************
+ *      MACROS
+ **********************/
 
-	for(i=0;i<(115200/2);i++)
-		picbuf[i] = color;
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
+void lv_port_disp_init(void)
+{
+    /*-------------------------
+     * Initialize your display
+     * -----------------------*/
+    disp_init();
 
-	LCD_Address_Set(xsta,ysta,xend-1,yend-1);//ÉèÖÃÏÔÊ¾·¶Î§
+    /*-----------------------------
+     * Create a buffer for drawing
+     *----------------------------*/
 
-	spi_write_blocking(spi_default, (uint8_t *)picbuf, (xend-xsta)*(yend-ysta)*2);
+    /**
+     * LVGL requires a buffer where it internally draws the widgets.
+     * Later this buffer will passed to your display driver's `flush_cb` to copy its content to your display.
+     * The buffer has to be greater than 1 display row
+     *
+     * There are 3 buffering configurations:
+     * 1. Create ONE buffer:
+     *      LVGL will draw the display's content here and writes it to your display
+     *
+     * 2. Create TWO buffer:
+     *      LVGL will draw the display's content to a buffer and writes it your display.
+     *      You should use DMA to write the buffer's content to the display.
+     *      It will enable LVGL to draw the next part of the screen to the other buffer while
+     *      the data is being sent form the first buffer. It makes rendering and flushing parallel.
+     *
+     * 3. Double buffering
+     *      Set 2 screens sized buffers and set disp_drv.full_refresh = 1.
+     *      This way LVGL will always provide the whole rendered screen in `flush_cb`
+     *      and you only need to change the frame buffer's address.
+     */
+
+    /* Example for 1) */
+    static lv_disp_draw_buf_t draw_buf_dsc_1;
+    //static lv_color_t buf_1[MY_DISP_HOR_RES * 10];                          /*A buffer for 10 rows*/
+    static lv_color_t buf_1[115200/8];                          /*A buffer for 10 rows*/
+    lv_disp_draw_buf_init(&draw_buf_dsc_1, buf_1, NULL, 115200/8);   /*Initialize the display buffer*/
 #if 0
-	for(i=ysta;i<yend;i++)
-	{													   	 	
-		for(j=xsta;j<xend;j++)
-		{
-			LCD_WR_DATA(color);
-		}
-	} 					  	    
+    /* Example for 2) */
+    static lv_disp_draw_buf_t draw_buf_dsc_2;
+    static lv_color_t buf_2_1[MY_DISP_HOR_RES * 10];                        /*A buffer for 10 rows*/
+    static lv_color_t buf_2_1[MY_DISP_HOR_RES * 10];                        /*An other buffer for 10 rows*/
+    lv_disp_draw_buf_init(&draw_buf_dsc_2, buf_2_1, buf_2_1, MY_DISP_HOR_RES * 10);   /*Initialize the display buffer*/
+
+    /* Example for 3) also set disp_drv.full_refresh = 1 below*/
+    static lv_disp_draw_buf_t draw_buf_dsc_3;
+    static lv_color_t buf_3_1[MY_DISP_HOR_RES * MY_DISP_VER_RES];            /*A screen sized buffer*/
+    static lv_color_t buf_3_1[MY_DISP_HOR_RES * MY_DISP_VER_RES];            /*An other screen sized buffer*/
+    lv_disp_draw_buf_init(&draw_buf_dsc_3, buf_3_1, buf_3_2, MY_DISP_VER_RES * LV_VER_RES_MAX);   /*Initialize the display buffer*/
 #endif
+    /*-----------------------------------
+     * Register the display in LVGL
+     *----------------------------------*/
+
+    static lv_disp_drv_t disp_drv;                         /*Descriptor of a display driver*/
+    lv_disp_drv_init(&disp_drv);                    /*Basic initialization*/
+
+    /*Set up the functions to access to your display*/
+
+    /*Set the resolution of the display*/
+    disp_drv.hor_res = 240;
+    disp_drv.ver_res = 240;
+
+    /*Used to copy the buffer's content to the display*/
+    disp_drv.flush_cb = disp_flush;
+
+    /*Set a display buffer*/
+    disp_drv.draw_buf = &draw_buf_dsc_1;
+
+    /*Required for Example 3)*/
+    //disp_drv.full_refresh = 1
+
+    /* Fill a memory array with a color if you have GPU.
+     * Note that, in lv_conf.h you can enable GPUs that has built-in support in LVGL.
+     * But if you have a different GPU you can use with this callback.*/
+    //disp_drv.gpu_fill_cb = gpu_fill;
+
+    /*Finally register the driver*/
+    lv_disp_drv_register(&disp_drv);
 }
 
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÔÚÖ¸¶¨Î»ÖÃ»­µã
-  Èë¿ÚÊı¾İ£ºx,y »­µã×ø±ê
-  color µãµÄÑÕÉ«
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_DrawPoint(uint16_t x,uint16_t y,uint16_t color)
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
+
+/*Initialize your display and the required peripherals.*/
+static void disp_init(void)
 {
-	LCD_Address_Set(x,y,x,y);//ÉèÖÃ¹â±êÎ»ÖÃ 
-	LCD_WR_DATA(color);
-} 
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£º»­Ïß
-  Èë¿ÚÊı¾İ£ºx1,y1   ÆğÊ¼×ø±ê
-  x2,y2   ÖÕÖ¹×ø±ê
-  color   ÏßµÄÑÕÉ«
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_DrawLine(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2,uint16_t color)
-{
-	uint16_t t; 
-	int xerr=0,yerr=0,delta_x,delta_y,distance;
-	int incx,incy,uRow,uCol;
-	delta_x=x2-x1; //¼ÆËã×ø±êÔöÁ¿ 
-	delta_y=y2-y1;
-	uRow=x1;//»­ÏßÆğµã×ø±ê
-	uCol=y1;
-	if(delta_x>0)incx=1; //ÉèÖÃµ¥²½·½Ïò 
-	else if (delta_x==0)incx=0;//´¹Ö±Ïß 
-	else {incx=-1;delta_x=-delta_x;}
-	if(delta_y>0)incy=1;
-	else if (delta_y==0)incy=0;//Ë®Æ½Ïß 
-	else {incy=-1;delta_y=-delta_y;}
-	if(delta_x>delta_y)distance=delta_x; //Ñ¡È¡»ù±¾ÔöÁ¿×ø±êÖá 
-	else distance=delta_y;
-	for(t=0;t<distance+1;t++)
-	{
-		LCD_DrawPoint(uRow,uCol,color);//»­µã
-		xerr+=delta_x;
-		yerr+=delta_y;
-		if(xerr>distance)
-		{
-			xerr-=distance;
-			uRow+=incx;
-		}
-		if(yerr>distance)
-		{
-			yerr-=distance;
-			uCol+=incy;
-		}
-	}
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£º»­¾ØĞÎ
-  Èë¿ÚÊı¾İ£ºx1,y1   ÆğÊ¼×ø±ê
-  x2,y2   ÖÕÖ¹×ø±ê
-  color   ¾ØĞÎµÄÑÕÉ«
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_DrawRectangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,uint16_t color)
-{
-	LCD_DrawLine(x1,y1,x2,y1,color);
-	LCD_DrawLine(x1,y1,x1,y2,color);
-	LCD_DrawLine(x1,y2,x2,y2,color);
-	LCD_DrawLine(x2,y1,x2,y2,color);
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£º»­Ô²
-  Èë¿ÚÊı¾İ£ºx0,y0   Ô²ĞÄ×ø±ê
-  r       °ë¾¶
-  color   Ô²µÄÑÕÉ«
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void Draw_Circle(uint16_t x0,uint16_t y0,uint8_t r,uint16_t color)
-{
-	int a,b;
-	a=0;b=r;	  
-	while(a<=b)
-	{
-		LCD_DrawPoint(x0-b,y0-a,color);             //3           
-		LCD_DrawPoint(x0+b,y0-a,color);             //0           
-		LCD_DrawPoint(x0-a,y0+b,color);             //1                
-		LCD_DrawPoint(x0-a,y0-b,color);             //2             
-		LCD_DrawPoint(x0+b,y0+a,color);             //4               
-		LCD_DrawPoint(x0+a,y0-b,color);             //5
-		LCD_DrawPoint(x0+a,y0+b,color);             //6 
-		LCD_DrawPoint(x0-b,y0+a,color);             //7
-		a++;
-		if((a*a+b*b)>(r*r))//ÅĞ¶ÏÒª»­µÄµãÊÇ·ñ¹ıÔ¶
-		{
-			b--;
-		}
-	}
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾µ¥¸ö×Ö·û
-  Èë¿ÚÊı¾İ£ºx,yÏÔÊ¾×ø±ê
-  num ÒªÏÔÊ¾µÄ×Ö·û
-  fc ×ÖµÄÑÕÉ«
-  bc ×ÖµÄ±³¾°É«
-  sizey ×ÖºÅ
-mode:  0·Çµş¼ÓÄ£Ê½  1µş¼ÓÄ£Ê½
-·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_ShowChar(uint16_t x,uint16_t y,uint8_t num,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{
-	uint8_t temp,sizex,t,m=0;
-	uint16_t i,TypefaceNum;//Ò»¸ö×Ö·ûËùÕ¼×Ö½Ú´óĞ¡
-	uint16_t x0=x;
-	sizex=sizey/2;
-	TypefaceNum=(sizex/8+((sizex%8)?1:0))*sizey;
-	num=num-' ';    //µÃµ½Æ«ÒÆºóµÄÖµ
-	LCD_Address_Set(x,y,x+sizex-1,y+sizey-1);  //ÉèÖÃ¹â±êÎ»ÖÃ 
-	for(i=0;i<TypefaceNum;i++)
-	{ 
-		if(sizey==12)temp=ascii_1206[num][i];		       //µ÷ÓÃ6x12×ÖÌå
-		else if(sizey==16)temp=ascii_1608[num][i];		 //µ÷ÓÃ8x16×ÖÌå
-		else if(sizey==24)temp=ascii_2412[num][i];		 //µ÷ÓÃ12x24×ÖÌå
-		else if(sizey==32)temp=ascii_3216[num][i];		 //µ÷ÓÃ16x32×ÖÌå
-		else return;
-		for(t=0;t<8;t++)
-		{
-			if(!mode)//·Çµş¼ÓÄ£Ê½
-			{
-				if(temp&(0x01<<t))LCD_WR_DATA(fc);
-				else LCD_WR_DATA(bc);
-				m++;
-				if(m%sizex==0)
-				{
-					m=0;
-					break;
-				}
-			}
-			else//µş¼ÓÄ£Ê½
-			{
-				if(temp&(0x01<<t))LCD_DrawPoint(x,y,fc);//»­Ò»¸öµã
-				x++;
-				if((x-x0)==sizex)
-				{
-					x=x0;
-					y++;
-					break;
-				}
-			}
-		}
-	}   	 	  
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾×Ö·û´®
-  Èë¿ÚÊı¾İ£ºx,yÏÔÊ¾×ø±ê
- *p ÒªÏÔÊ¾µÄ×Ö·û´®
- fc ×ÖµÄÑÕÉ«
- bc ×ÖµÄ±³¾°É«
- sizey ×ÖºÅ
-mode:  0·Çµş¼ÓÄ£Ê½  1µş¼ÓÄ£Ê½
-·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_ShowString(uint16_t x,uint16_t y,const uint8_t *p,uint16_t fc,uint16_t bc,uint8_t sizey,uint8_t mode)
-{         
-	while(*p!='\0')
-	{       
-		LCD_ShowChar(x,y,*p,fc,bc,sizey,mode);
-		x+=sizey/2;
-		p++;
-	}  
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾Êı×Ö
-  Èë¿ÚÊı¾İ£ºmµ×Êı£¬nÖ¸Êı
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-uint32_t mypow(uint8_t m,uint8_t n)
-{
-	uint32_t result=1;	 
-	while(n--)result*=m;
-	return result;
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾ÕûÊı±äÁ¿
-  Èë¿ÚÊı¾İ£ºx,yÏÔÊ¾×ø±ê
-  num ÒªÏÔÊ¾ÕûÊı±äÁ¿
-  len ÒªÏÔÊ¾µÄÎ»Êı
-  fc ×ÖµÄÑÕÉ«
-  bc ×ÖµÄ±³¾°É«
-  sizey ×ÖºÅ
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_ShowIntNum(uint16_t x,uint16_t y,uint16_t num,uint8_t len,uint16_t fc,uint16_t bc,uint8_t sizey)
-{         	
-	uint8_t t,temp;
-	uint8_t enshow=0;
-	uint8_t sizex=sizey/2;
-	for(t=0;t<len;t++)
-	{
-		temp=(num/mypow(10,len-t-1))%10;
-		if(enshow==0&&t<(len-1))
-		{
-			if(temp==0)
-			{
-				LCD_ShowChar(x+t*sizex,y,' ',fc,bc,sizey,0);
-				continue;
-			}else enshow=1; 
-
-		}
-		LCD_ShowChar(x+t*sizex,y,temp+48,fc,bc,sizey,0);
-	}
-} 
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾Á½Î»Ğ¡Êı±äÁ¿
-  Èë¿ÚÊı¾İ£ºx,yÏÔÊ¾×ø±ê
-  num ÒªÏÔÊ¾Ğ¡Êı±äÁ¿
-  len ÒªÏÔÊ¾µÄÎ»Êı
-  fc ×ÖµÄÑÕÉ«
-  bc ×ÖµÄ±³¾°É«
-  sizey ×ÖºÅ
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_ShowFloatNum1(uint16_t x,uint16_t y,float num,uint8_t len,uint16_t fc,uint16_t bc,uint8_t sizey)
-{
-	uint8_t t,temp,sizex;
-	uint16_t num1;
-	sizex=sizey/2;
-	num1=num*100;
-	for(t=0;t<len;t++)
-	{
-		temp=(num1/mypow(10,len-t-1))%10;
-		if(t==(len-2))
-		{
-			LCD_ShowChar(x+(len-2)*sizex,y,'.',fc,bc,sizey,0);
-			t++;
-			len+=1;
-		}
-		LCD_ShowChar(x+t*sizex,y,temp+48,fc,bc,sizey,0);
-	}
-}
-
-
-/******************************************************************************
-  º¯ÊıËµÃ÷£ºÏÔÊ¾Í¼Æ¬
-  Èë¿ÚÊı¾İ£ºx,yÆğµã×ø±ê
-  length Í¼Æ¬³¤¶È
-  width  Í¼Æ¬¿í¶È
-  pic[]  Í¼Æ¬Êı×é
-  ·µ»ØÖµ£º  ÎŞ
- ******************************************************************************/
-void LCD_ShowPicture(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const uint8_t pic[])
-{
-	uint16_t i,j;
-	uint32_t k=0;
-	LCD_Address_Set(x,y,x+length-1,y+width-1);
-
-	spi_write_blocking(spi_default, pic, length*width*2);
-#if 0
-	for(i=0;i<length;i++)
-	{
-		for(j=0;j<width;j++)
-		{
-			LCD_WR_DATA8(pic[k*2]);
-			LCD_WR_DATA8(pic[k*2+1]);
-			k++;
-		}
-	}
-#endif
-}
-
-void LCD_ShowPicture16(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const uint16_t pic[])
-{
-	uint16_t i,j;
-	uint32_t k=0;
-	LCD_Address_Set(x,y,x+length-1,y+width-1);
-
-	spi_write_blocking(spi_default, (uint8_t*)pic, length*width*2);
-}
-
-
-uint16_t sx = 0;
-uint16_t sy = 0;
-uint16_t sn = 0;
-
-void ps(const uint8_t *p)
-{
-	char buf[5] = {0};
-	sprintf(buf, "%3d", sn);
-	LCD_ShowString(sx,sy, buf, BLACK, LIGHTBLUE, 16, 0);
-	LCD_ShowString(sx+40,sy, p, BLACK, LIGHTBLUE, 16, 0);
-	sy += 20;
-
-	if((sy+20) > 240){
-		LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
-		sy = 0;
-	}
-
-	sn++;
-	if(sn > 100)
-		sn = 0;
-}
-
-void pn(uint32_t num)
-{
-	char buf[5] = {0};
-	sprintf(buf, "%3d", sn);
-	LCD_ShowString(sx,sy, buf, BLACK, LIGHTBLUE, 16, 0);
-	LCD_ShowIntNum(sx+40,sy,num, 15, BLACK, LIGHTBLUE,16);
-	sy += 20;
-
-	if((sy+20) > 240){
-		LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
-		sy = 0;
-	}
-
-	sn++;
-	if(sn > 100)
-		sn = 0;
-}
-
-void Calc_Fps(void)
-{
-	int i;
-	int start_ms;
-	int end_ms;
-	int dt;
-	int fps;
-	char buf[10] = {0};
-
-	start_ms = board_millis();
-
-	for(i=0;i<200;i++){
-		//LCD_Fill(0,0,LCD_W,LCD_H,BLUE);
-		LCD_ShowPicture(0,0,240,240,gImage_ns);
-	}
-
-	end_ms = board_millis();
-
-	LCD_Fill(0,0,LCD_W,LCD_H,GREEN);
-
-	dt = end_ms - start_ms;
-	pn(dt);
-
-	dt = dt/1000;
-	fps = 200/dt;
-	pn(fps);
-}
-
-void screen(void)
-{
-	int i;
-
+    /*You code here*/
 	LCD_Init();
-	//Calc_Fps();
+}
 
-	while(1){
-		LCD_ShowPicture16(0,0,240,240,gImage_github);
-		sleep_ms(2000);
-		LCD_ShowPicture16(0,0,240,240,gImage_nga);
-		sleep_ms(2000);
-		LCD_ShowPicture16(0,0,240,240,gImage_ns);
-		sleep_ms(2000);
-	}
+/*Flush the content of the internal buffer the specific area on the display
+ *You can use DMA or any hardware acceleration to do this operation in the background but
+ *'lv_disp_flush_ready()' has to be called when finished.*/
+static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
+{
+    /*The most simple case (but also the slowest) to put all pixels to the screen one-by-one*/
+
+    LCD_Address_Set(area->x1, area->y1, area->x2, area->y2);
+    spi_write_blocking(spi_default, (uint8_t *)color_p, \
+		    (area->x2 - area->x1 + 1)*(area->y2 - area->y1 + 1)*2);
+
+    /*IMPORTANT!!!
+     *Inform the graphics library that you are ready with the flushing*/
+    lv_disp_flush_ready(disp_drv);
 }

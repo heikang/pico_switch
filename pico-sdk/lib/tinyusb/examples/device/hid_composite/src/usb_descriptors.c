@@ -26,8 +26,6 @@
 #include "tusb.h"
 #include "usb_descriptors.h"
 
-#include "lcd.h"
-
 #if 0 //delete at end
 typedef enum
 {
