@@ -15,8 +15,8 @@ add_executable(${PROJECT})
 # Example source
 target_sources(${PROJECT} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core1.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/usb_descriptors.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/lcd.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/lvgl/src/font/lv_font_montserrat_18.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/lvgl/src/font/lv_font_montserrat_28.c
 	${CMAKE_CURRENT_SOURCE_DIR}/src/lvgl/src/font/lv_font_simsun_16_cjk.c

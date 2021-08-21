@@ -26,38 +26,6 @@
 #include "tusb.h"
 #include "usb_descriptors.h"
 
-#if 0 //delete at end
-typedef enum
-{
-	TUSB_DESC_DEVICE                = 0x01,
-	TUSB_DESC_CONFIGURATION         = 0x02,
-	TUSB_DESC_STRING                = 0x03,
-	TUSB_DESC_INTERFACE             = 0x04,
-	TUSB_DESC_ENDPOINT              = 0x05,
-	TUSB_DESC_DEVICE_QUALIFIER      = 0x06,
-	TUSB_DESC_OTHER_SPEED_CONFIG    = 0x07,
-	TUSB_DESC_INTERFACE_POWER       = 0x08,
-	TUSB_DESC_OTG                   = 0x09,
-	TUSB_DESC_DEBUG                 = 0x0A,
-	TUSB_DESC_INTERFACE_ASSOCIATION = 0x0B,
-
-	TUSB_DESC_BOS                   = 0x0F,
-	TUSB_DESC_DEVICE_CAPABILITY     = 0x10,
-
-	TUSB_DESC_FUNCTIONAL            = 0x21,
-
-	// Class Specific Descriptor
-	TUSB_DESC_CS_DEVICE             = 0x21,
-	TUSB_DESC_CS_CONFIGURATION      = 0x22,
-	TUSB_DESC_CS_STRING             = 0x23,
-	TUSB_DESC_CS_INTERFACE          = 0x24,
-	TUSB_DESC_CS_ENDPOINT           = 0x25,
-
-	TUSB_DESC_SUPERSPEED_ENDPOINT_COMPANION     = 0x30,
-	TUSB_DESC_SUPERSPEED_ISO_ENDPOINT_COMPANION = 0x31
-}tusb_desc_type_t;
-#endif
-
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
  *

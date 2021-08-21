@@ -45,71 +45,10 @@
 
 #include "usb_descriptors.h"
 
-#include "lvgl/lvgl.h"
-#include "lcd.h"
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
-
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-	BLINK_NOT_MOUNTED = 250,
-	BLINK_MOUNTED = 1000,
-	BLINK_SUSPENDED = 2500,
-};
-
-static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
-
-void kprint(const char *buf)
-{
-	board_uart_write(buf, strlen(buf));
-	board_uart_write("\r\n", strlen("\r\n"));
-}
-void kprintn(uint32_t num)
-{
-	char buf[20] = {0};
-	sprintf(buf, "%d", num);
-	kprint(buf);
-}
-//--------------------------------------------------------------------+
-// Device callbacks
-//--------------------------------------------------------------------+
-#if 1 //not very important
-// Invoked when device is mounted
-void tud_mount_cb(void)
-{
-	blink_interval_ms = BLINK_MOUNTED;
-	kprint(__func__);
-}
-
-// Invoked when device is unmounted
-void tud_umount_cb(void)
-{
-	blink_interval_ms = BLINK_NOT_MOUNTED;
-	kprint(__func__);
-}
-
-// Invoked when usb bus is suspended
-// remote_wakeup_en : if host allow us  to perform remote wakeup
-// Within 7ms, device must draw an average of current less than 2.5 mA from bus
-void tud_suspend_cb(bool remote_wakeup_en)
-{
-	(void) remote_wakeup_en;
-	blink_interval_ms = BLINK_SUSPENDED;
-	kprint(__func__);
-}
-
-// Invoked when usb bus is resumed
-void tud_resume_cb(void)
-{
-	blink_interval_ms = BLINK_MOUNTED;
-	kprint(__func__);
-}
-#endif
+static repeating_timer_t timer;
 
 //--------------------------------------------------------------------+
 // USB HID
@@ -204,11 +143,11 @@ static void send_hid_report(void)
 	if ( !tud_hid_ready() ) {
 		tret++;
 		if(tret > 100000){
-			kprint("tret");
+			printf("tret\n");
 			if ( tud_suspended() )
 			{
 				tud_remote_wakeup();
-				kprint("wakeup");
+				printf("wakeup\n");
 				return;
 			}
 
@@ -223,9 +162,9 @@ static void send_hid_report(void)
 
 	if(jflag){
 		report.Button |= SWITCH_A;
-		kprint("A+");
+		printf("A+\n");
 	}else{
-		kprint("none");
+		printf("none\n");
 	}
 	jflag = !jflag;
 
@@ -240,7 +179,7 @@ void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint8_t len)
 	(void) itf;
 	(void) len;
 
-	kprint(__func__);
+	printf("%s\n",__func__);
 	send_hid_report();
 }
 
@@ -256,7 +195,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
 	(void) buffer;
 	(void) reqlen;
 
-	kprint(__func__);
+	printf("%s\n",__func__);
 	return 0;
 }
 
@@ -270,83 +209,26 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	(void) report_type;
 	(void) buffer;
 	(void) bufsize;
-	kprint(__func__);
-}
-
-bool timer_callback1(repeating_timer_t *t) {
-	static bool ledflag = false;
-	board_led_write(ledflag);
-	ledflag = !ledflag;
-
-	send_hid_report();
-	return true;
-}
-bool timer_callback(repeating_timer_t *t) {
-	lv_tick_inc(1);
-	return true;
-}
-void lvgl_demo_start(void)
-{
-	lv_obj_t *label = lv_label_create(lv_scr_act());
-	lv_label_set_text(label, "hello world");
-	lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+	printf("%s\n",__func__);
 }
 
 /*------------- MAIN -------------*/
-repeating_timer_t timer;
-void main1(void) //control lcd
-{
-	add_repeating_timer_ms(1, timer_callback, NULL, &timer);
-	kprint("--------core1 start--------");
-
-	//init spi
-	spi_init(spi_default, 48*1000 * 1000); //54864
-
-	//init pins
-	gpio_set_function(PICO_DEFAULT_SPI_RX_PIN, GPIO_FUNC_SPI); //GP16
-	gpio_set_function(PICO_DEFAULT_SPI_CSN_PIN, GPIO_FUNC_SPI); //GP17
-	gpio_set_function(PICO_DEFAULT_SPI_SCK_PIN, GPIO_FUNC_SPI); //GP18
-	gpio_set_function(PICO_DEFAULT_SPI_TX_PIN, GPIO_FUNC_SPI); //GP19
-
-	gpio_init(20);
-	gpio_set_dir(20, GPIO_OUT); //RES
-	gpio_init(21);
-	gpio_set_dir(21, GPIO_OUT); //DC
-	gpio_init(22);
-	gpio_set_dir(22, GPIO_OUT); //BLK
-
-	sleep_ms(100);
-
-	lv_init();
-	lv_port_disp_init();
-	lvgl_demo_start();
-
-	while(1){
-		lv_task_handler();
-	}
-
-}
-
+extern void main1(void); //control lcd
 int main(void)
 {
 	int i;
 	char buf;
 
 	board_init();
+	stdio_init_all();
+
+
+	printf("--------core0 start--------\n");
+
+	add_repeating_timer_ms(250, timer_callback, NULL, &timer);
 
 	multicore_launch_core1(main1);
 
-	sleep_ms(100);
-	kprint("--------core0 start--------");
-
-#if 0
-	while(1){
-		//get script
-		board_uart_read(&buf, 1);
-		//save script
-		board_uart_write(&buf, 1);
-	}
-#endif
 	tusb_init();
 
 	while (1)

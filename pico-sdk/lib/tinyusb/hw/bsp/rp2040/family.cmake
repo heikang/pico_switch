@@ -38,9 +38,11 @@ if (NOT TARGET _rp2040_family_inclusion_marker)
 			)
 
 	target_link_libraries(tinyusb_common_base INTERFACE
+			pico_stdlib
 			hardware_structs
 			hardware_irq
 			hardware_spi
+			hardware_dma
 			pico_multicore
 			hardware_resets
 			pico_sync
