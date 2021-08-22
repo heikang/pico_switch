@@ -34,6 +34,7 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "pico/binary_info.h"
+#include "pico/unique_id.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 #include "hardware/sync.h"
@@ -48,7 +49,6 @@
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
-static repeating_timer_t timer;
 
 //--------------------------------------------------------------------+
 // USB HID
@@ -129,10 +129,10 @@ typedef struct {
 	uint8_t  RY;     // Right Stick Y
 } USB_JoystickReport_Output_t;
 
-bool jflag = false;
 uint32_t tret = 0;
 static void send_hid_report(void)
 {
+	static bool jflag = false;
 	USB_JoystickReport_Input_t report = {0};
 
 	if(board_millis() < 10000){
@@ -211,9 +211,15 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	(void) bufsize;
 	printf("%s\n",__func__);
 }
+static repeating_timer_t timer_hid;
+static bool timer_callback_hid(repeating_timer_t *t) {
+	send_hid_report();
+	return true;
+}
 
 /*------------- MAIN -------------*/
 extern void main1(void); //control lcd
+extern char __flash_binary_end;
 int main(void)
 {
 	int i;
@@ -222,14 +228,21 @@ int main(void)
 	board_init();
 	stdio_init_all();
 
+	pico_unique_board_id_t board_id;
+	pico_get_unique_board_id(&board_id);
+	printf("UID:");
+	for (int i = 0; i < PICO_UNIQUE_BOARD_ID_SIZE_BYTES; ++i) {
+		printf("%02X", board_id.id[i]);
+	}
+	printf("\n");
 
-	printf("--------core0 start--------\n");
-
-	add_repeating_timer_ms(250, timer_callback, NULL, &timer);
+	printf("--------core0 start--------,0x%x\n", (intptr_t)&__flash_binary_end);
 
 	multicore_launch_core1(main1);
 
 	tusb_init();
+
+	add_repeating_timer_ms(500, timer_callback_hid, NULL, &timer_hid);
 
 	while (1)
 	{

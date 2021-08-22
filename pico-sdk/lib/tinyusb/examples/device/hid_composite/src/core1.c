@@ -74,14 +74,14 @@ static uint dma_chan;
 static dma_channel_config c;
 static lv_disp_drv_t disp_drv;                         /*Descriptor of a display driver*/
 static lv_disp_draw_buf_t draw_buf_dsc_1;
-static lv_color_t buf_1[115200/2];                          /*A buffer for 10 rows*/
-static lv_color_t buf_2[115200/2];                          /*A buffer for 10 rows*/
+static lv_color_t buf_1[115200/4];                          /*A buffer for 10 rows*/
+static lv_color_t buf_2[115200/4];                          /*A buffer for 10 rows*/
 
 static bool timer_callback(repeating_timer_t *t) {
 	lv_tick_inc(1);
 	return true;
 }
-static bool timer_led(repeating_timer_t *t) {
+static bool timer_led_callback(repeating_timer_t *t) {
 	static bool ledflag = false;
 	board_led_write(ledflag);
 	ledflag = !ledflag;
@@ -287,7 +287,7 @@ void lv_port_disp_init(void)
 {
 	disp_init();
 
-	lv_disp_draw_buf_init(&draw_buf_dsc_1, buf_1, buf_2, 115200/2);   /*Initialize the display buffer*/
+	lv_disp_draw_buf_init(&draw_buf_dsc_1, buf_1, buf_2, 115200/4);   /*Initialize the display buffer*/
 
 	lv_disp_drv_init(&disp_drv);                    /*Basic initialization*/
 
@@ -304,7 +304,7 @@ void lv_port_disp_init(void)
 	/*Finally register the driver*/
 	lv_disp_drv_register(&disp_drv);
 }
-
+uint32_t off=0;
 static void lvgl_loop(void)
 {
 	lv_obj_t * img1 = lv_img_create(lv_scr_act());
@@ -314,9 +314,11 @@ static void lvgl_loop(void)
 	//lv_img_set_offset_y(img1, -1);
 
 	while(1){
-		//sleep_ms(1);
+		sleep_ms(1);
 		lv_task_handler();
-		lv_obj_invalidate(img1);
+		//lv_obj_invalidate(img1);
+		lv_img_set_offset_y(img1, off%240);
+		off++;
 	}
 }
 
@@ -324,7 +326,7 @@ static void lvgl_loop(void)
 void main1(void) //control lcd
 {
 	add_repeating_timer_ms(1, timer_callback, NULL, &timer);
-	add_repeating_timer_ms(250, timer_led, NULL, &timer_led);
+	add_repeating_timer_ms(250, timer_led_callback, NULL, &timer_led);
 
 	printf("--------core1 start--------\n");
 	//init spi
