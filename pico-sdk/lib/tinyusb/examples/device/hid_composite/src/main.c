@@ -38,6 +38,7 @@
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 #include "hardware/sync.h"
+#include "hardware/adc.h"
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/sio.h"
 
@@ -179,8 +180,8 @@ void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint8_t len)
 	(void) itf;
 	(void) len;
 
-	printf("%s\n",__func__);
-	send_hid_report();
+	//printf("%s\n",__func__);
+	//send_hid_report();
 }
 
 // Invoked when received GET_REPORT control request
@@ -211,9 +212,75 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 	(void) bufsize;
 	printf("%s\n",__func__);
 }
+static repeating_timer_t timer_joystick;
 static repeating_timer_t timer_hid;
 static bool timer_callback_hid(repeating_timer_t *t) {
 	send_hid_report();
+	return true;
+}
+struct j_button{
+	uint gpio;
+	char button;
+};
+struct j_button A={
+	.gpio = 2,
+	.button = 'A',
+};
+struct j_button B={
+	.gpio = 3,
+	.button = 'B',
+};
+struct j_button C={
+	.gpio = 4,
+	.button = 'C',
+};
+struct j_button D={
+	.gpio = 5,
+	.button = 'D',
+};
+static void get_button(struct j_button X)
+{
+	uint bt;
+	bt = gpio_get(X.gpio);
+	if(bt)
+		printf(" , ");
+	else
+		printf("%c, ", X.button);
+}
+
+static void get_joystick(void)
+{
+
+	printf("---------------------------------------\n");
+	printf("{ ");
+	get_button(A);
+	get_button(B);
+	get_button(C);
+	get_button(D);
+
+	adc_select_input(0);
+	uint adc_x_raw = adc_read();
+	adc_select_input(1);
+	uint adc_y_raw = adc_read();
+
+	// Display the joystick position something like this:
+	// X: [            o             ]  Y: [              o         ]
+	const uint bar_width = 40;
+	const uint adc_max = (1 << 12) - 1;
+	uint bar_x_pos = adc_x_raw * bar_width / adc_max;
+	uint bar_y_pos = adc_y_raw * bar_width / adc_max;
+	printf("\tX: [");
+	for (int i = 0; i < bar_width; ++i)
+		putchar( i == bar_x_pos ? 'o' : ' ');
+	printf("]  Y: [");
+	for (int i = 0; i < bar_width; ++i)
+		putchar( i == bar_y_pos ? 'o' : ' ');
+	printf("]\t");
+	printf(" }\n");
+}
+
+static bool timer_callback_joystick(repeating_timer_t *t) {
+	get_joystick();
 	return true;
 }
 
@@ -228,6 +295,23 @@ int main(void)
 	board_init();
 	stdio_init_all();
 
+	/* gpio for joystick */
+	gpio_init(2);
+	gpio_set_dir(2, GPIO_IN); //A
+	gpio_init(3);
+	gpio_set_dir(3, GPIO_IN); //B
+	gpio_init(4);
+	gpio_set_dir(4, GPIO_IN); //C
+	gpio_init(5);
+	gpio_set_dir(5, GPIO_IN); //D
+
+	adc_init();
+	adc_gpio_init(26);
+	adc_gpio_init(27);
+
+	add_repeating_timer_ms(500, timer_callback_joystick, NULL, &timer_joystick);
+
+	/* board UID */
 	pico_unique_board_id_t board_id;
 	pico_get_unique_board_id(&board_id);
 	printf("UID:");
@@ -238,15 +322,17 @@ int main(void)
 
 	printf("--------core0 start--------,0x%x\n", (intptr_t)&__flash_binary_end);
 
+	/* call core1 */
 	multicore_launch_core1(main1);
 
+	/* USB HID */
 	tusb_init();
 
-	add_repeating_timer_ms(500, timer_callback_hid, NULL, &timer_hid);
+	//add_repeating_timer_ms(1000, timer_callback_hid, NULL, &timer_hid);
 
 	while (1)
 	{
-		tud_task(); // tinyusb device task
+		//tud_task(); // tinyusb device task
 	}
 
 	return 0;

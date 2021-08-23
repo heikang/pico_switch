@@ -43,6 +43,7 @@ if (NOT TARGET _rp2040_family_inclusion_marker)
 			hardware_irq
 			hardware_spi
 			hardware_dma
+			hardware_adc
 			pico_multicore
 			pico_unique_id
 			hardware_resets
